@@ -29,6 +29,18 @@ final class AppModel: ObservableObject {
         }
     }
 
+    func clearSelected() async {
+        let engine = self.engine
+        _ = await Task.detached(priority: .utility) { engine.clearSelected() }.value
+        returned = engine.returnedCount
+    }
+
+    func clearAll() async {
+        let engine = self.engine
+        _ = await Task.detached(priority: .utility) { engine.clearAll() }.value
+        returned = engine.returnedCount
+    }
+
     func checkNow() async {
         guard !busy else { return }
         busy = true
@@ -76,6 +88,9 @@ struct MenuView: View {
         Divider()
         Button(model.busy ? "Checking…" : "Check now") { Task { await model.checkNow() } }
             .keyboardShortcut("r").disabled(model.busy)
+        Button("Clear marks on selected mail") { Task { await model.clearSelected() } }.disabled(model.returned == 0)
+        Button("Clear marks on all returned mails (\(model.returned))") { Task { await model.clearAll() } }.disabled(model.returned == 0)
+        Divider()
         Toggle("Open at login", isOn: $atLogin)
             .onChange(of: atLogin) { on in
                 do { if on { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() } }

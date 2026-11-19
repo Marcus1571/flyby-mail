@@ -58,6 +58,7 @@ final class Engine {
     static let scanDays = 30
     static let pruneDays = 45
 
+    private let lock = NSLock()   // a tick and a menu action must not run at the same time
     private let stateURL: URL
     private(set) var state: State
 
@@ -126,6 +127,7 @@ final class Engine {
 
     @discardableResult
     func tick(now: Date = Date()) -> TickReport {
+        lock.lock(); defer { lock.unlock() }
         var report = TickReport(started: now)
         let t0 = Date()
 
@@ -221,15 +223,16 @@ final class Engine {
             state.entries[entry.messageId] = entry
         }
 
-        // 2b. Mail refreshes the inbox after each copy and can drop the flag of the mail returned just before: let it settle, then re-check the marks
-        //     of the mails returned in this tick and of any returned within the last 15 minutes (after that the marks are the user's to keep or clear).
-        let recent = state.entries.values.filter { $0.status == .returned && ($0.returnedAt.map { now.timeIntervalSince($0) < 900 } ?? false) }
-        if !justReturned.isEmpty { Thread.sleep(forTimeInterval: 12) }
-        for (account, entries) in Dictionary(grouping: recent, by: \.account) {
-            do {
-                let out = try run("ensure-marks", [account] + entries.map(\.messageId))
-                EngineLog.write("marks-checked", ["account": account, "result": out.replacingOccurrences(of: "\n", with: " | ")])
-            } catch { fail("ensure-marks", error) }
+        // 2b. Mail refreshes the inbox after each copy and can drop the flag of the mail returned just before: let it settle, then re-check the marks of
+        //     the mails returned in THIS tick only. Later, a missing flag means the user clicked it off (see 3b), so it must not be put back.
+        if !justReturned.isEmpty {
+            Thread.sleep(forTimeInterval: 12)
+            for (account, entries) in Dictionary(grouping: justReturned, by: \.account) {
+                do {
+                    let out = try run("ensure-marks", [account] + entries.map(\.messageId))
+                    EngineLog.write("marks-checked", ["account": account, "result": out.replacingOccurrences(of: "\n", with: " | ")])
+                } catch { fail("ensure-marks", error) }
+            }
         }
 
         // 3. returned mail that has been answered (by you from Mail, or by anyone, landing in any account) -> take the marks off
@@ -257,6 +260,22 @@ final class Engine {
             }
         }
 
+        // 3b. dismissed by the user: flag clicked off, or the mail moved/deleted. (Mails returned in this tick are left alone, their marks are still settling.)
+        let justIds = Set(justReturned.map(\.messageId))
+        let looked = state.entries.values.filter { $0.status == .returned && !justIds.contains($0.messageId) }
+        for (account, entries) in Dictionary(grouping: looked, by: \.account) {
+            do {
+                let out = try run("check-dismissed", [account] + entries.map(\.messageId))
+                for line in out.split(separator: "\n") {
+                    let f = line.split(separator: "\t", maxSplits: 1).map(String.init)
+                    guard f.count == 2, var entry = state.entries[f[0]] else { continue }
+                    entry.status = .cleared; report.unmarked += 1
+                    state.entries[f[0]] = entry
+                    EngineLog.write("unmarked", ["id": f[0], "reason": f[1] == "gone" ? "the mail left the Inbox" : "you cleared the flag"])
+                }
+            } catch { fail("check-dismissed", error) }
+        }
+
         // 4. housekeeping
         let cutoff = now.addingTimeInterval(-Double(Engine.pruneDays) * 86400)
         state.scanned = state.scanned.filter { $0.value > cutoff }
@@ -269,6 +288,39 @@ final class Engine {
                                  "returned": report.returned, "answered": report.answered, "unmarked": report.unmarked,
                                  "pending": pendingCount, "errors": report.errors.count, "ms": report.millis])
         return report
+    }
+
+    // MARK: menu actions (clear marks by hand)
+
+    /// Clears the marks of the returned mails that are selected in Mail right now. Returns how many.
+    func clearSelected() -> Int {
+        lock.lock(); defer { lock.unlock() }
+        let returned = state.entries.values.filter { $0.status == .returned }
+        guard !returned.isEmpty else { return 0 }
+        do {
+            let out = try run("unmark-selection", returned.map(\.messageId))
+            var n = 0
+            for id in out.split(separator: "\n").map(String.init) {
+                guard var e = state.entries[id] else { continue }
+                e.status = .cleared; state.entries[id] = e; n += 1
+                EngineLog.write("unmarked", ["id": id, "reason": "cleared from the menu (selected mail)"])
+            }
+            save(); return n
+        } catch { EngineLog.write("error", ["step": "unmark-selection", "error": "\(error)"]); return 0 }
+    }
+
+    /// Clears the marks of every returned mail. Returns how many.
+    func clearAll() -> Int {
+        lock.lock(); defer { lock.unlock() }
+        var n = 0
+        for var e in state.entries.values where e.status == .returned {
+            do {
+                _ = try run("unmark", [e.account, e.messageId])
+                e.status = .cleared; state.entries[e.messageId] = e; n += 1
+                EngineLog.write("unmarked", ["id": e.messageId, "reason": "cleared from the menu (all)"])
+            } catch { EngineLog.write("error", ["step": "unmark", "error": "\(error)"]) }
+        }
+        save(); return n
     }
 
     /// "v=1; due=1795089346; noreply=1"

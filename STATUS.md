@@ -35,6 +35,16 @@ _Last updated: 2026-11-19_
   `return` now marks, waits, reads back and only finishes after the marks held on two checks 3 s apart; result is logged (`copied 1 flagged=true color=orange`). Not yet seen live.
 - AppleScript note: reading `flagged status` right after setting it can lag; also `before` is a reserved word.
 
+## Dismissing a returned mail (2026-11-19, operator request)
+
+- Mail's main toolbar cannot get an extension icon (no toolbar API in MailKit; the headers mention none; the only forum thread has no reply). The existing **flag button is the dismiss**:
+  click the flag off -> on the next check (or "Check now") the engine removes the orange background and marks the entry cleared (`check-dismissed` script; log reason "you cleared the flag";
+  a mail that left the INBOX is cleared too, reason "the mail left the Inbox"). Verified live on "Mail test 2" (flag switched off by script, same effect as the click).
+- The 15-minute flag re-check was narrowed: `ensure-marks` now only covers the mails returned in the same tick (after a 12 s settle), otherwise it would put back a flag the user just removed.
+- Menu-bar app: "Clear marks on selected mail" (only mails FlyBy returned, via `unmark-selection`) and "Clear marks on all returned mails (N)". Built, not yet clicked by the operator.
+- Mail row colours are local to the Mac (Apple Mail does not sync them); the flag syncs. To check on an iPhone.
+- Manual clear without FlyBy: select the mail, Format > Show Colors, pick white (per Apple Community answers, not tried).
+
 ## Engine never starts Mail by itself (2026-11-19, found while listing what is left to test)
 
 - AppleScript launches any app it addresses, so a tick with Mail closed would have reopened Mail every 5 minutes. Now: Mail closed and nothing due -> tick skipped
