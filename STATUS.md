@@ -8,6 +8,7 @@ _Last updated: 2026-11-19_
   stamps an `X-FlyBy: v=1; due=<epoch>; noreply=<0|1>` header on the outgoing message). Builds universal (arm64 + x86_64),
   signed with Developer ID + hardened runtime + app sandbox. Installed in `/Applications`; macOS lists it
   (`pluginkit -m -p com.apple.email.extension`) and it is enabled (`pluginkit -e use`).
+- **Mail first showed "No Extensions"**: the Info.plist lacked `MEExtensionCapabilities` (see findings); fixed, awaiting the re-check in Mail.
 - **Not yet verified in Mail**: the button appears, the picker works, the header reaches the sent message and the Sent copy.
 - Apple Mail on the operator's Mac has only iCloud and Google accounts; the Yahoo test account still has to be added.
 

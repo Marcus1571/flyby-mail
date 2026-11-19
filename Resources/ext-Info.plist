@@ -14,6 +14,10 @@
 	<dict>
 		<key>NSExtensionAttributes</key>
 		<dict>
+			<key>MEExtensionCapabilities</key>
+			<array>
+				<string>MEComposeSessionHandler</string>
+			</array>
 			<key>MEComposeSession</key>
 			<dict>
 				<key>MEComposeIcon</key><string>airplane.departure</string>
