@@ -23,6 +23,18 @@ _Last updated: 2026-11-19_
 - Verified live on the Yahoo test account: tagged -> returned (`copied 1`, idempotent). **Verified live (operator, 2026-11-19 13:38-13:39 local)**: replying to the returned mail and sending it -> the next check logged `unmarked` and the INBOX copy read flagged=false, color=none; the reply sits in the same Mail conversation ("2 Messages"). Ticks ran on schedule every 5 min. Not yet verified live: answered-by-recipient path.
 - Menu bar: status, Check now, Open at login, Show log, Welcome, Quit. Host app is `LSUIElement`, entitlement `com.apple.security.automation.apple-events`.
 
+## Bugs found by the operator's multi-account test (2026-11-19, fixed)
+
+- Mail Test 05/06 were sent from Yahoo to the operator's Gmail; the operator replied in Gmail (Gmail treats the Yahoo address as the operator's own, so a Gmail
+  "Reply" goes Gmail -> Gmail: test method, not a bug). Mail holds the Google account too, so the replies landed in the **Google** inbox. The engine only searched the
+  sending account's inbox, missed the replies (14:58/14:59), and returned both mails at 14:59:47/14:59:51, orange. Fixed: `replies` and the new `activity`
+  script search the inboxes of ALL accounts (`every message of inbox`); step 3 of the tick now unmarks a returned mail when you replied in Mail OR any reply to it
+  reached any inbox (state `lastActivityScan` limits each look to mail that arrived since the previous one). Verified: both copies unmarked ("a reply arrived").
+- No Bcc anywhere: all recent sent mails have bcc=0; neither extension nor engine ever adds one.
+- Flag lost after return on 05/06/"Mail test 2" (colour stuck, flag icon missing): Mail applies flag changes with a delay and a synced copy can lose them;
+  `return` now marks, waits, reads back and only finishes after the marks held on two checks 3 s apart; result is logged (`copied 1 flagged=true color=orange`). Not yet seen live.
+- AppleScript note: reading `flagged status` right after setting it can lag; also `before` is a reserved word.
+
 ## Picker v2 + feedback (2026-11-19)
 
 - Picker v2 (SwiftUI): the Gmail presets with their real times, date and time, only-if-nobody-replies switch. Operator test: works, but setting a time "feels fragile"

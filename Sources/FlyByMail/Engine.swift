@@ -21,6 +21,7 @@ struct State: Codable {
     var entries: [String: Entry] = [:]        // key = Message-Id
     var scanned: [String: Date] = [:]         // sent mail already looked at -> its sent date (pruned)
     var replyTargets: [String: Date] = [:]    // Message-Ids the user replied to -> date of that reply
+    var lastActivityScan: Date?               // last time every inbox was checked for answers to returned mail
 }
 
 struct TickReport {
@@ -192,15 +193,29 @@ final class Engine {
             state.entries[entry.messageId] = entry
         }
 
-        // 3. returned and the user replied afterwards -> take the marks off
-        for var entry in state.entries.values where entry.status == .returned {
-            guard let returnedAt = entry.returnedAt, let repliedAt = state.replyTargets[entry.messageId], repliedAt > returnedAt else { continue }
+        // 3. returned mail that has been answered (by you from Mail, or by anyone, landing in any account) -> take the marks off
+        let returnedEntries = state.entries.values.filter { $0.status == .returned }
+        if !returnedEntries.isEmpty {
+            var reasons: [String: String] = [:]
+            for e in returnedEntries {
+                if let at = e.returnedAt, let repliedAt = state.replyTargets[e.messageId], repliedAt > at { reasons[e.messageId] = "you replied" }
+            }
+            let since = state.lastActivityScan ?? returnedEntries.compactMap(\.returnedAt).min() ?? now
+            let age = min(max(Int(now.timeIntervalSince(since)) + 120, 60), 14 * 86400)   // only mail that arrived since the last look
             do {
-                let result = try run("unmark", [entry.account, entry.messageId])
-                entry.status = .cleared; report.unmarked += 1
-                EngineLog.write("unmarked", ["id": entry.messageId, "result": result, "replied_at": ISO8601DateFormatter().string(from: repliedAt)])
-                state.entries[entry.messageId] = entry
-            } catch { fail("unmark", error) }
+                let out = try run("activity", ["\(age)"] + returnedEntries.map(\.messageId))
+                for id in out.split(separator: "\n").map(String.init) where reasons[id] == nil { reasons[id] = "a reply arrived" }
+                state.lastActivityScan = now
+            } catch { fail("activity", error) }
+            for (id, reason) in reasons {
+                guard var entry = state.entries[id] else { continue }
+                do {
+                    let result = try run("unmark", [entry.account, id])
+                    entry.status = .cleared; report.unmarked += 1
+                    EngineLog.write("unmarked", ["id": id, "reason": reason, "result": result])
+                    state.entries[id] = entry
+                } catch { fail("unmark", error) }
+            }
         }
 
         // 4. housekeeping

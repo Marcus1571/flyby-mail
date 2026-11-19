@@ -1,4 +1,4 @@
--- Is there an answer to a sent mail? Looks at INBOX messages received after the sent mail and keeps those whose
+-- Is there an answer to a sent mail? Looks at messages in any account's inbox received after the sent mail and keeps those whose
 -- In-Reply-To/References contain its Message-Id and that are not from me and not automatic (bounce, out-of-office).
 -- Prints one line per real answer: <fromAddress>   (nothing when unanswered). Only the headers of the few newer messages are read.
 -- argv: account, messageId (no angle brackets), ageSeconds of the sent mail
@@ -11,8 +11,8 @@ on run argv
 	tell application "Mail"
 		set acct to first account whose name is acctName
 		set myAddresses to email addresses of acct
-		set inboxBox to mailbox "INBOX" of acct
-		set newer to (every message of inboxBox whose date received > (nowDate - sentAge))
+		-- `inbox` = the inboxes of ALL accounts: an answer can land in another account (forwarding, aliases, the same person on two accounts)
+		set newer to (every message of inbox whose date received > (nowDate - sentAge))
 		repeat with m in newer
 			set h to all headers of m
 			set refs to (my headerValue(h, "In-Reply-To:")) & " " & (my headerValue(h, "References:"))
