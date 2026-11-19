@@ -135,6 +135,7 @@ final class Engine {
     func tick(now: Date = Date()) -> TickReport {
         lock.lock(); defer { lock.unlock() }
         var report = TickReport(started: now)
+        var rescuedReturned = Set<String>()   // returned mails whose reply was just rescued from Junk
         let t0 = Date()
 
         // Talking to Mail through AppleScript starts Mail if it is not running. Never do that behind the user's back:
@@ -195,6 +196,24 @@ final class Engine {
                     }
                 } catch { fail("headers", error) }
             }
+        }
+
+        // 1b. A reply can be filed as junk (Yahoo Bulk, Gmail Spam, or Mail's own filter): look in the junk mailboxes and move real replies back to the Inbox.
+        let tracked = state.entries.values.filter { $0.status == .returned || ($0.status == .pending && $0.noreply) }
+        if !tracked.isEmpty {
+            let age = min(max(Int(now.timeIntervalSince(tracked.map(\.sentAt).min() ?? now)) + 120, 60), 14 * 86400)
+            do {
+                let out = try run("rescue", ["\(age)"] + tracked.map(\.messageId))
+                for line in out.split(separator: "\n") {
+                    let f = line.split(separator: "\t", omittingEmptySubsequences: false).map(String.init)
+                    guard f.count >= 2, var entry = state.entries[f[0]] else { continue }
+                    EngineLog.write("rescued", ["id": f[0], "from": f[1], "account": f.count > 2 ? f[2] : "", "note": "reply was in Junk, moved to the Inbox"])
+                    if entry.status == .pending {
+                        entry.status = .answered; entry.answeredBy = f[1]; report.answered += 1
+                        state.entries[f[0]] = entry
+                    } else { rescuedReturned.insert(f[0]) }
+                }
+            } catch { fail("rescue", error) }
         }
 
         // 2. due and still pending -> answered, or return
@@ -270,6 +289,7 @@ final class Engine {
             do {
                 let out = try run("activity", ["\(age)"] + returnedEntries.map(\.messageId))
                 for id in out.split(separator: "\n").map(String.init) where reasons[id] == nil { reasons[id] = "a reply arrived" }
+                for id in rescuedReturned where reasons[id] == nil { reasons[id] = "a reply arrived (rescued from Junk)" }
                 state.lastActivityScan = now
             } catch { fail("activity", error) }
             for (id, reason) in reasons {
@@ -332,6 +352,16 @@ final class Engine {
             }
             save(); return n
         } catch { EngineLog.write("error", ["step": "unmark-selection", "error": "\(error)"]); return 0 }
+    }
+
+    /// Menu: clears the junk status of the mails selected in Mail (moving them out of Junk/Bulk/Spam). Returns how many.
+    func markSelectedNotJunk() -> Int {
+        lock.lock(); defer { lock.unlock() }
+        do {
+            let n = Int(try run("notjunk-selection", [])) ?? 0
+            EngineLog.write("not-junk", ["count": n, "via": "menu"])
+            return n
+        } catch { EngineLog.write("error", ["step": "notjunk-selection", "error": "\(error)"]); return 0 }
     }
 
     /// Clears the marks of every returned mail. Returns how many.

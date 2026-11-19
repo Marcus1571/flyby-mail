@@ -36,6 +36,11 @@ final class AppModel: ObservableObject {
         returned = engine.returnedCount
     }
 
+    func markNotJunk() async {
+        let engine = self.engine
+        _ = await Task.detached(priority: .utility) { engine.markSelectedNotJunk() }.value
+    }
+
     func clearAll() async {
         let engine = self.engine
         _ = await Task.detached(priority: .utility) { engine.clearAll() }.value
@@ -94,6 +99,7 @@ struct MenuView: View {
         if model.returned > 0 { Text("\(model.returned) returned, marked orange in your Inbox") }
         if let last = model.lastCheck { Text("Last check \(last.formatted(date: .omitted, time: .shortened))") }
         if let error = model.lastError { Text("⚠︎ \(error)").lineLimit(2) }
+        Button("Mark selected mail as Not Junk") { Task { await model.markNotJunk() } }
         Divider()
         Button(model.busy ? "Checking…" : "Check now") { Task { await model.checkNow() } }
             .keyboardShortcut("r").disabled(model.busy)
