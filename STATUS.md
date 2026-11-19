@@ -23,6 +23,16 @@ _Last updated: 2026-11-19_
 - Verified live on the Yahoo test account: tagged -> returned (`copied 1`, idempotent). **Verified live (operator, 2026-11-19 13:38-13:39 local)**: replying to the returned mail and sending it -> the next check logged `unmarked` and the INBOX copy read flagged=false, color=none; the reply sits in the same Mail conversation ("2 Messages"). Ticks ran on schedule every 5 min. Not yet verified live: answered-by-recipient path.
 - Menu bar: status, Check now, Open at login, Show log, Welcome, Quit. Host app is `LSUIElement`, entitlement `com.apple.security.automation.apple-events`.
 
+## Picker v2 + feedback (2026-11-19)
+
+- Picker v2 (SwiftUI): the Gmail presets with their real times, date and time, only-if-nobody-replies switch. Operator test: works, but setting a time "feels fragile"
+  (only a tiny grey line confirmed it). Fix (built, awaiting the operator's look): a framed confirmation panel (grey "No reminder yet" -> green "Reminder set /
+  Comes back <time> / if nobody replies"), a Done button that reads "Choose a time" (disabled) until a time is set and then "Done" (closes the picker), a haptic tick on
+  every change, and an experiment: while a reminder is set the recipient tokens in the compose window get a green MailKit "success" annotation ("FlyBy: comes back ...")
+  so the reminder stays visible after the picker closes (`session.reload()` redraws it). Unknown until seen: whether Mail shows the annotation text, and whether
+  `dismiss` / `performClose` really closes the popover.
+- Not in the picker yet (engine cannot act on them): follow-up text, private note.
+
 ## Operator feedback 2026-11-19 (requirements)
 
 - The returned mail must be unmistakable: "this is NOT a normal incoming mail, it is your mail brought back because nobody answered". Done so far by script:

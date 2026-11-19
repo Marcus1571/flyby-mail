@@ -30,6 +30,17 @@ final class ComposeHandler: NSObject, MEComposeSessionHandler {
         return PickerViewController(session: session, handler: self)
     }
 
+    func annotateAddressesForSession(_ session: MEComposeSession, completion: @escaping ([MEEmailAddress: MEAddressAnnotation]) -> Void) {
+        guard let pick = picks[session.sessionID], let due = pick.due() else { completion([:]); return }
+        let text = "FlyBy: comes back \(friendly(due))" + (pick.onlyIfNoReply ? " if nobody replies" : "")
+        let note = MEAddressAnnotation.success(withLocalizedDescription: text)
+        var map: [MEEmailAddress: MEAddressAnnotation] = [:]
+        let message = session.mailMessage
+        for address in message.toAddresses + message.ccAddresses { map[address] = note }
+        log.info("annotate: \(map.count) recipient(s) '\(text, privacy: .public)' session=\(session.sessionID.uuidString, privacy: .public)")
+        completion(map)
+    }
+
     func additionalHeaders(for session: MEComposeSession) -> [String: [String]] {
         guard let pick = picks[session.sessionID], let due = pick.due() else {
             log.info("headers: none session=\(session.sessionID.uuidString, privacy: .public)")
@@ -119,16 +130,16 @@ final class PickerModel: ObservableObject {
     var onChange: ((Pick) -> Void)?
     private func changed() { onChange?(Pick(choice: choice, onlyIfNoReply: onlyIfNoReply)) }
 
-    var summary: String {
-        guard let due = Pick(choice: choice, onlyIfNoReply: onlyIfNoReply).due() else { return "No reminder: nothing is added to this mail" }
-        return (onlyIfNoReply ? "Comes back " : "Comes back, whatever happens, ") + friendly(due)
-    }
+    var isSet: Bool { choice != .none }
+    var when: String { Pick(choice: choice, onlyIfNoReply: onlyIfNoReply).due().map { friendly($0) } ?? "" }
+    var condition: String { onlyIfNoReply ? "if nobody replies" : "even if someone replies" }
 }
 
 // MARK: view
 
 struct PickerView: View {
     @ObservedObject var model: PickerModel
+    var done: () -> Void = {}
     private let columns = [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)]
 
     var body: some View {
@@ -164,19 +175,50 @@ struct PickerView: View {
             }
             .toggleStyle(.switch)
 
-            Divider()
-
-            HStack(spacing: 6) {
-                Image(systemName: model.choice == .none ? "clock.badge.xmark" : "clock").foregroundStyle(.secondary)
-                Text(model.summary).font(.callout).foregroundStyle(model.choice == .none ? .secondary : .primary)
-            }
-            .accessibilityElement(children: .combine)
+            ConfirmationPanel(model: model, done: done)
 
             Button("Test: in 2 minutes") { model.choice = .preset(.test2min) }   // TODO remove before release
                 .buttonStyle(.link).font(.caption).foregroundStyle(.secondary)
         }
         .padding(16)
         .frame(width: 340)
+    }
+}
+
+/// The user must always know where they stand: grey and quiet until a time is set, then a green framed confirmation
+/// and a Done button that closes the picker.
+struct ConfirmationPanel: View {
+    @ObservedObject var model: PickerModel
+    let done: () -> Void
+
+    var body: some View {
+        VStack(spacing: 10) {
+            HStack(alignment: .center, spacing: 10) {
+                Image(systemName: model.isSet ? "checkmark.circle.fill" : "circle.dashed")
+                    .font(.system(size: 26)).foregroundStyle(model.isSet ? Color.green : Color.secondary)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(model.isSet ? "Reminder set" : "No reminder yet").font(.headline)
+                    Text(model.isSet ? "Comes back \(model.when)" : "Choose a time above").font(.subheadline)
+                    if model.isSet { Text(model.condition).font(.caption).foregroundStyle(.secondary) }
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(RoundedRectangle(cornerRadius: 10).fill(model.isSet ? Color.green.opacity(0.14) : Color.secondary.opacity(0.08)))
+            .overlay(RoundedRectangle(cornerRadius: 10).stroke(model.isSet ? Color.green : Color.secondary.opacity(0.3), lineWidth: model.isSet ? 1.5 : 1))
+            .accessibilityElement(children: .combine)
+
+            Button(action: done) {
+                Text(model.isSet ? "Done" : "Choose a time").font(.headline).frame(maxWidth: .infinity, minHeight: 24)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(model.isSet ? .green : .gray)
+            .controlSize(.large)
+            .disabled(!model.isSet)
+            .keyboardShortcut(.defaultAction)
+        }
+        .animation(.easeInOut(duration: 0.2), value: model.isSet)
     }
 }
 
@@ -222,11 +264,18 @@ final class PickerViewController: MEExtensionViewController {
             if case .custom(let d) = pick.choice { model.customDate = d }
         }
         let sessionID = session.sessionID
+        let session = self.session
         model.onChange = { [weak handler] pick in
             handler?.picks[sessionID] = pick
             log.info("picked choice=\(String(describing: pick.choice), privacy: .public) noreply=\(pick.onlyIfNoReply) session=\(sessionID.uuidString, privacy: .public)")
+            if pick.choice != .none { NSHapticFeedbackManager.defaultPerformer.perform(.levelChange, performanceTime: .now) }
+            session.reload()   // asks Mail to redraw the recipient annotation
         }
-        let host = NSHostingView(rootView: PickerView(model: model))
+        let host = NSHostingView(rootView: PickerView(model: model, done: { [weak self] in
+            log.info("done pressed session=\(sessionID.uuidString, privacy: .public)")
+            self?.dismiss(nil)
+            self?.view.window?.performClose(nil)
+        }))
         view = host
         preferredContentSize = host.fittingSize
     }
