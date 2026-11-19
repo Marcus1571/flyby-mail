@@ -1,6 +1,7 @@
--- Make sure returned mails still carry their marks (orange flag + orange background). Mail can lose the flag when it refreshes the
+-- Make sure returned mails carry their marks (orange flag + orange background + unread). Mail can lose the flag when it refreshes the
 -- inbox from the server (seen live: two mails returned in the same tick, the first one lost its flag). Re-applies only what is missing and
--- never touches the read state. Prints one line per id: <id> flagged=<bool> color=<color>.
+-- Mail delivers mail you sent to yourself as READ, so the reminder is also set unread here (this script only runs for mails whose marks are still
+-- being established, never later). Prints one line per id: <id> flagged=<bool> color=<color>.
 -- argv: account, then message ids (no angle brackets)
 on run argv
 	set acctName to item 1 of argv
@@ -14,6 +15,7 @@ on run argv
 			repeat with c in found
 				if not (flagged status of c) then set flag index of c to 1
 				if (background color of c) is not orange then set background color of c to orange
+				set read status of c to false
 			end repeat
 			delay 1
 			set found to (every message of inboxBox whose message id is wanted)

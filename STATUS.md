@@ -35,6 +35,17 @@ _Last updated: 2026-11-19_
   `return` now marks, waits, reads back and only finishes after the marks held on two checks 3 s apart; result is logged (`copied 1 flagged=true color=orange`). Not yet seen live.
 - AppleScript note: reading `flagged status` right after setting it can lag; also `before` is a reserved word.
 
+## Return = a reminder mail to yourself (2026-11-19 22:3x, operator chose option A)
+
+- Found with Test 08/09: a returned **copy** keeps its original date (Test 08: sent 15:31, returned 15:42, still dated 15:31; Mail sorts by date received and `date received` cannot be set),
+  so it sits at its old position in the inbox, buried after a day or a week. A mail sent to oneself (Test 09, iCloud -> iCloud) is already in the inbox when due: its "return" is invisible.
+- Now `remind.applescript` sends a **new mail from the account to its own address**: subject `FlyBy: nobody replied to "<subject>"`, body = who it went to, when, a `message://` link to the original
+  (opens it in Mail) and the quoted original (3000 chars). It arrives dated now: top of the inbox, push notification on the phone. Idempotent (a reminder with that subject in Sent within 6 h is reused).
+- Mail delivers mail you send to yourself as read, so `ensure-marks` flags it orange, colours it and sets it unread; the tick polls for the arrival (6 rounds, 10 s apart) and keeps trying on later ticks
+  (`marksPending`, up to 12 ticks, log `marks-gave-up`). Entry fields: `markId` (reminder Message-Id), `marksPending`, `marksTries`; older entries (no `markId`) still mark the copy of the original.
+  Unmark / dismiss / menu clear / reply detection all act on `markKey` (= reminder id, else original id); replies are still matched against the original id.
+- Verified live for the script and the marking on Test 09's reminder (arrived 22:36:06, `read=false flagged=true color=orange`). Full engine path (due -> remind -> mark) pending on the next tagged mail.
+
 ## Dismissing a returned mail (2026-11-19, operator request)
 
 - Mail's main toolbar cannot get an extension icon (no toolbar API in MailKit; the headers mention none; the only forum thread has no reply). The existing **flag button is the dismiss**:

@@ -16,7 +16,12 @@ struct Entry: Codable {
     var status: Status
     var returnedAt: Date?
     var answeredBy: String?
+    var markId: String?        // Message-Id of the REMINDER mail that carries the marks (nil for older entries: then the copy of the original does)
+    var marksPending: Bool?    // the reminder has not been seen in the inbox and marked yet
+    var marksTries: Int?       // ticks spent waiting for it
 }
+
+extension Entry { var markKey: String { markId ?? messageId } }
 
 struct State: Codable {
     var entries: [String: Entry] = [:]        // key = Message-Id
@@ -213,26 +218,42 @@ final class Engine {
                 EngineLog.write("answered", ["id": entry.messageId, "by": who, "due": ISO8601DateFormatter().string(from: entry.due), "decision": "not returned"])
             } else {
                 do {
-                    let result = try run("return", [entry.account, entry.messageId])
+                    let result = try run("remind", [entry.account, entry.messageId])
                     entry.status = .returned; entry.returnedAt = now; report.returned += 1
+                    if result.hasPrefix("reminder "), !result.hasPrefix("reminder-") {
+                        entry.markId = String(result.dropFirst("reminder ".count)).trimmingCharacters(in: .whitespaces)
+                        entry.marksPending = true; entry.marksTries = 0
+                    }
                     justReturned.append(entry)
-                    EngineLog.write("returned", ["id": entry.messageId, "noreply": entry.noreply, "result": result,
+                    EngineLog.write("returned", ["id": entry.messageId, "noreply": entry.noreply, "reminder_id": entry.markId ?? "unknown", "result": result,
                                                  "late_by_s": Int(now.timeIntervalSince(entry.due))])
                 } catch { fail("return", error); continue }
             }
             state.entries[entry.messageId] = entry
         }
 
-        // 2b. Mail refreshes the inbox after each copy and can drop the flag of the mail returned just before: let it settle, then re-check the marks of
-        //     the mails returned in THIS tick only. Later, a missing flag means the user clicked it off (see 3b), so it must not be put back.
-        if !justReturned.isEmpty {
-            Thread.sleep(forTimeInterval: 12)
-            for (account, entries) in Dictionary(grouping: justReturned, by: \.account) {
+        // 2b. The reminder mail needs a few seconds to arrive in the inbox. Mark it (orange flag + background, unread) as soon as it is there: poll for up to
+        //     a minute right after sending, and keep trying on later ticks (up to 12 ticks, an hour) for any reminder still waiting.
+        let rounds = justReturned.isEmpty ? 1 : 6
+        for round in 0..<rounds {
+            let waiting = state.entries.values.filter { $0.status == .returned && $0.marksPending == true }
+            if waiting.isEmpty { break }
+            if round > 0 { Thread.sleep(forTimeInterval: 10) }
+            for (account, entries) in Dictionary(grouping: waiting, by: \.account) {
                 do {
-                    let out = try run("ensure-marks", [account] + entries.map(\.messageId))
-                    EngineLog.write("marks-checked", ["account": account, "result": out.replacingOccurrences(of: "\n", with: " | ")])
+                    let out = try run("ensure-marks", [account] + entries.map(\.markKey))
+                    EngineLog.write("marks-checked", ["account": account, "round": round, "result": out.replacingOccurrences(of: "\n", with: " | ")])
+                    let done = Set(out.split(separator: "\n").compactMap { line -> String? in
+                        line.contains("flagged=true") && line.contains("color=orange") ? line.split(separator: " ").first.map(String.init) : nil
+                    })
+                    for var e in entries where done.contains(e.markKey) { e.marksPending = false; state.entries[e.messageId] = e }
                 } catch { fail("ensure-marks", error) }
             }
+        }
+        for var e in state.entries.values where e.status == .returned && e.marksPending == true {
+            e.marksTries = (e.marksTries ?? 0) + 1
+            if e.marksTries! >= 12 { e.marksPending = false; EngineLog.write("marks-gave-up", ["id": e.messageId, "reminder_id": e.markKey]) }
+            state.entries[e.messageId] = e
         }
 
         // 3. returned mail that has been answered (by you from Mail, or by anyone, landing in any account) -> take the marks off
@@ -240,7 +261,8 @@ final class Engine {
         if !returnedEntries.isEmpty {
             var reasons: [String: String] = [:]
             for e in returnedEntries {
-                if let repliedAt = state.replyTargets[e.messageId], repliedAt > e.sentAt { reasons[e.messageId] = "you replied" }
+                let repliedAt = [state.replyTargets[e.messageId], state.replyTargets[e.markKey]].compactMap { $0 }.max()
+                if let repliedAt, repliedAt > e.sentAt { reasons[e.messageId] = "you replied" }
             }
             let since = state.lastActivityScan ?? returnedEntries.compactMap(\.returnedAt).min() ?? now
             let age = min(max(Int(now.timeIntervalSince(since)) + 120, 60), 14 * 86400)   // only mail that arrived since the last look
@@ -252,7 +274,7 @@ final class Engine {
             for (id, reason) in reasons {
                 guard var entry = state.entries[id] else { continue }
                 do {
-                    let result = try run("unmark", [entry.account, id])
+                    let result = try run("unmark", [entry.account, entry.markKey])
                     entry.status = .cleared; report.unmarked += 1
                     EngineLog.write("unmarked", ["id": id, "reason": reason, "result": result])
                     state.entries[id] = entry
@@ -262,16 +284,17 @@ final class Engine {
 
         // 3b. dismissed by the user: flag clicked off, or the mail moved/deleted. (Mails returned in this tick are left alone, their marks are still settling.)
         let justIds = Set(justReturned.map(\.messageId))
-        let looked = state.entries.values.filter { $0.status == .returned && !justIds.contains($0.messageId) }
+        let looked = state.entries.values.filter { $0.status == .returned && $0.marksPending != true && !justIds.contains($0.messageId) }
         for (account, entries) in Dictionary(grouping: looked, by: \.account) {
+            let byMark = Dictionary(entries.map { ($0.markKey, $0.messageId) }, uniquingKeysWith: { first, _ in first })
             do {
-                let out = try run("check-dismissed", [account] + entries.map(\.messageId))
+                let out = try run("check-dismissed", [account] + entries.map(\.markKey))
                 for line in out.split(separator: "\n") {
                     let f = line.split(separator: "\t", maxSplits: 1).map(String.init)
-                    guard f.count == 2, var entry = state.entries[f[0]] else { continue }
+                    guard f.count == 2, let key = byMark[f[0]], var entry = state.entries[key] else { continue }
                     entry.status = .cleared; report.unmarked += 1
-                    state.entries[f[0]] = entry
-                    EngineLog.write("unmarked", ["id": f[0], "reason": f[1] == "gone" ? "the mail left the Inbox" : "you cleared the flag"])
+                    state.entries[key] = entry
+                    EngineLog.write("unmarked", ["id": key, "reason": f[1] == "gone" ? "the mail left the Inbox" : "you cleared the flag"])
                 }
             } catch { fail("check-dismissed", error) }
         }
@@ -298,10 +321,11 @@ final class Engine {
         let returned = state.entries.values.filter { $0.status == .returned }
         guard !returned.isEmpty else { return 0 }
         do {
-            let out = try run("unmark-selection", returned.map(\.messageId))
+            let byMark = Dictionary(returned.map { ($0.markKey, $0.messageId) }, uniquingKeysWith: { first, _ in first })
+            let out = try run("unmark-selection", returned.map(\.markKey))
             var n = 0
-            for id in out.split(separator: "\n").map(String.init) {
-                guard var e = state.entries[id] else { continue }
+            for markKey in out.split(separator: "\n").map(String.init) {
+                guard let id = byMark[markKey], var e = state.entries[id] else { continue }
                 e.status = .cleared; state.entries[id] = e; n += 1
                 EngineLog.write("unmarked", ["id": id, "reason": "cleared from the menu (selected mail)"])
             }
@@ -315,7 +339,7 @@ final class Engine {
         var n = 0
         for var e in state.entries.values where e.status == .returned {
             do {
-                _ = try run("unmark", [e.account, e.messageId])
+                _ = try run("unmark", [e.account, e.markKey])
                 e.status = .cleared; state.entries[e.messageId] = e; n += 1
                 EngineLog.write("unmarked", ["id": e.messageId, "reason": "cleared from the menu (all)"])
             } catch { EngineLog.write("error", ["step": "unmark", "error": "\(error)"]) }
