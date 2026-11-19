@@ -11,6 +11,19 @@ Append-only log. Newest first.
   `MEComposeSession` (icon = SF Symbol name, tooltip) sits in the same `NSExtensionAttributes`.
 - Lesson: pluginkit registration is not proof that Mail lists the extension; check Mail's Extensions pane.
 
+## 2026-11-19 (test 2, partly) — Mail scripting can find tagged mail, check replies and copy a sent mail into the inbox
+
+- The tag alone does nothing: the first test mail (due in 2 min) "never came back" because no engine existed. The picker's "Returns ..." text
+  promises something only an engine can do.
+- `scripts/spike-scan.applescript` (read only): lists the Sent mails carrying `X-Flyby`, their due epoch and whether a reply is in the
+  last 7 days of the inbox (reply = inbox mail whose headers contain the sent Message-Id). Worked on the Yahoo account.
+- `scripts/spike-return.applescript`: `duplicate <sent message> to <INBOX>` created exactly one copy in the Yahoo INBOX; `set read status ... to false`
+  made it unread. Find messages with `whose message id contains "<id>"`.
+- AppleScript gotchas hit: Mail's `inbox` property is case-insensitive, so a variable named `inBox` breaks (`Can't set inbox of application`);
+  `st`, `copies` are unusable names; `duplicate` must be a plain statement, its result cannot be assigned.
+- Not yet checked: that the copy exists on Yahoo's server (iPhone / Yahoo web), moving a *received* thread out of the inbox and back, and
+  whether Apple Mail shows the copy inside the same conversation.
+
 ## 2026-11-19 (test 1 PASSED) — header stamped and present on the Yahoo Sent copy
 
 - From the Yahoo account in Apple Mail, with the picker set to "In 2 minutes (test)": the extension log shows

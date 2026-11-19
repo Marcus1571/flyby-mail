@@ -15,7 +15,7 @@ _Last updated: 2026-11-19_
 ## Tests
 
 1. **PASSED 2026-11-19**: extension loads, button + picker work, header `X-Flyby: v=1; due=<epoch>; noreply=1` is on the Yahoo Sent copy. Icon still to confirm visually.
-2. Mail scripting moves a message out of the inbox and back, and can read headers (reply check). Not started.
+2. Mail scripting: **partly passed 2026-11-19**: scan of tagged Sent mail + reply check + copy of the sent mail into the Yahoo INBOX as unread work (`scripts/spike-*.applescript`). Still to do: move a received message to a FlyBy folder and back; confirm the copy reaches Yahoo's server/iPhone; a real engine loop (nothing runs on its own yet).
 
 ## Notarization
 
