@@ -11,6 +11,12 @@ so that someone who uses Apple Mail (Ben, a non-technical user) gets the Gmail-p
 "if nobody replies" in a button in Mail's Compose window, nothing else to learn. Distribution: Developer ID + notarized DMG
 on GitHub (no App Store), like the operator's other menu-bar apps.
 
+## Decision: where the engine lives (operator, 2026-11-19)
+
+The engine runs **on the user's Mac, inside the menu-bar app**, through Mail's own scripting (no password, nothing on LT or the VPS).
+Until the extension is very mature it stays there. A VPS/IMAP engine (needs the user's app password, runs 24/7, Yahoo/AOL only) is a
+later option if a sleeping Mac turns out to matter. Do not build engine parts on LT or the VPS without the operator asking.
+
 ## Conventions
 
 - Built like the other menu-bar apps: hand-assembled bundles from `scripts/build.sh` (no Xcode project), signed with the
