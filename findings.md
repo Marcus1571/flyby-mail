@@ -11,6 +11,15 @@ Append-only log. Newest first.
   `MEComposeSession` (icon = SF Symbol name, tooltip) sits in the same `NSExtensionAttributes`.
 - Lesson: pluginkit registration is not proof that Mail lists the extension; check Mail's Extensions pane.
 
+## 2026-11-19 (test 1 PASSED) — header stamped and present on the Yahoo Sent copy
+
+- From the Yahoo account in Apple Mail, with the picker set to "In 2 minutes (test)": the extension log shows
+  `headers: X-FlyBy: v=1; due=<epoch>; noreply=1` at send (due = send + 2 min), and the **Sent copy in the Yahoo account's Sent folder carries
+  `X-Flyby: v=1; due=...; noreply=1`** (Mail normalizes the name's case). So a later engine can find tagged mails by reading Sent.
+- Mail's AppleScript works from Terminal without a new permission prompt: `all headers of message` on a Yahoo Sent message returned the header
+  (read only the X-FlyBy/Message-Id/Date lines; never print other headers or bodies in logs).
+- Not found in Gmail: the test mail's recipient was an auto-completed contact, probably not the Gmail address; irrelevant for the result.
+
 ## 2026-11-19 — Mail extension must be ticked inside Mail; compose icon
 
 - `pluginkit -e use` ("+") is macOS's own election, **not** the checkbox in Mail ▸ Settings ▸ Extensions. Mail's log said
