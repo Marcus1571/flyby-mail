@@ -20,7 +20,7 @@ _Last updated: 2026-11-19_
   (not me, not automatic) among newer INBOX mail -> `answered`, else `return` copies the sent mail into INBOX with orange flag + orange background + unread;
   (3) a returned mail the user replied to afterwards gets `unmark` (flag and colour off).
 - State: `~/Library/Application Support/FlyByMail/state.json`. Log (JSON lines, why-it-did-what-it-did): `~/Library/Logs/FlyByMail/engine.log`.
-- Verified live on the Yahoo test account: tagged -> returned (`copied 1`, idempotent). Not yet verified live: answered-by-recipient path, unmark-on-reply path.
+- Verified live on the Yahoo test account: tagged -> returned (`copied 1`, idempotent). **Verified live (operator, 2026-11-19 13:38-13:39 local)**: replying to the returned mail and sending it -> the next check logged `unmarked` and the INBOX copy read flagged=false, color=none; the reply sits in the same Mail conversation ("2 Messages"). Ticks ran on schedule every 5 min. Not yet verified live: answered-by-recipient path.
 - Menu bar: status, Check now, Open at login, Show log, Welcome, Quit. Host app is `LSUIElement`, entitlement `com.apple.security.automation.apple-events`.
 
 ## Operator feedback 2026-11-19 (requirements)
