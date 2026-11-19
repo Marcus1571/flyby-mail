@@ -12,6 +12,16 @@ _Last updated: 2026-11-19_
 - **Not yet verified in Mail**: the button appears, the picker works, the header reaches the sent message and the Sent copy.
 - Apple Mail on the operator's Mac has only iCloud and Google accounts; the Yahoo test account still has to be added.
 
+## Operator feedback 2026-11-19 (requirements)
+
+- The returned mail must be unmistakable: "this is NOT a normal incoming mail, it is your mail brought back because nobody answered". Done so far by script:
+  orange flag + orange background + unread on the copy (verified by readback). Ideas to push further: extension-side marking (message action handler),
+  and an own-authored reminder instead of a plain copy (to be checked: not possible by script alone).
+- Test copy arrived with its subject but showed "This message has no content": to check with a mail that has a body.
+- The compose picker must grow into the richness of the Gmail pop-up (presets, date and time, only-if-no-reply, follow-up text, note, cancel,
+  current reminder) with a native Apple look: SwiftUI, system controls, light/dark, keyboard and VoiceOver friendly.
+- Icon confirmed: the brand airplane, monochrome, in the Compose toolbar.
+
 ## Tests
 
 1. **PASSED 2026-11-19**: extension loads, button + picker work, header `X-Flyby: v=1; due=<epoch>; noreply=1` is on the Yahoo Sent copy. Icon still to confirm visually.

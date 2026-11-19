@@ -23,6 +23,8 @@ on run argv
 				delay 3 -- the copy is made on the server; give Mail a moment to list it
 				set found to (messages of inboxBox whose message id contains wantedId)
 				repeat with c in found
+					set flag index of c to 1 -- orange flag (FlyBy orange): "this is your mail coming back, not a new one"
+					set background color of c to orange
 					set read status of c to false
 				end repeat
 				return "copied; matching messages in INBOX now: " & (count of found)

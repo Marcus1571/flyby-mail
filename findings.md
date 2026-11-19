@@ -11,6 +11,13 @@ Append-only log. Newest first.
   `MEComposeSession` (icon = SF Symbol name, tooltip) sits in the same `NSExtensionAttributes`.
 - Lesson: pluginkit registration is not proof that Mail lists the extension; check Mail's Extensions pane.
 
+## 2026-11-19 (marking a returned mail)
+
+- Operator: a returned mail needs a clear "this is your mail reproposed, nobody answered" look. Mail has no labels; by script
+  `set flag index of <msg> to 1` (orange flag) + `set background color of <msg> to orange` + `set read status ... to false` all worked on the Yahoo INBOX copy
+  (read back: flagged=true, flagIndex=1, color=orange, read=false). Flags and colours sync to other Apple devices as IMAP keywords; other mail clients may ignore them.
+- MailKit's message action handler can also flag/colour messages as they download (docs), but it may not fire for a copy created locally by script: to test.
+
 ## 2026-11-19 (test 2, partly) — Mail scripting can find tagged mail, check replies and copy a sent mail into the inbox
 
 - The tag alone does nothing: the first test mail (due in 2 min) "never came back" because no engine existed. The picker's "Returns ..." text
