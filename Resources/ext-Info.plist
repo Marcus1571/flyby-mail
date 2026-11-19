@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleName</key><string>FlyBy</string>
+	<key>CFBundleDisplayName</key><string>FlyBy</string>
+	<key>CFBundleExecutable</key><string>FlyByMailExtension</string>
+	<key>CFBundleIdentifier</key><string>app.legba.flybymail.extension</string>
+	<key>CFBundlePackageType</key><string>XPC!</string>
+	<key>CFBundleShortVersionString</key><string>__VERSION__</string>
+	<key>CFBundleVersion</key><string>__BUILD__</string>
+	<key>LSMinimumSystemVersion</key><string>13.0</string>
+	<key>NSExtension</key>
+	<dict>
+		<key>NSExtensionAttributes</key>
+		<dict>
+			<key>MEComposeSession</key>
+			<dict>
+				<key>MEComposeIcon</key><string>airplane.departure</string>
+				<key>MEComposeIconToolTip</key><string>FlyBy: bring this mail back if nobody replies</string>
+			</dict>
+		</dict>
+		<key>NSExtensionPointIdentifier</key><string>com.apple.email.extension</string>
+		<key>NSExtensionPrincipalClass</key><string>FlyByExtension</string>
+	</dict>
+</dict>
+</plist>
