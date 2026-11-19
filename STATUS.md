@@ -35,6 +35,11 @@ _Last updated: 2026-11-19_
   `return` now marks, waits, reads back and only finishes after the marks held on two checks 3 s apart; result is logged (`copied 1 flagged=true color=orange`). Not yet seen live.
 - AppleScript note: reading `flagged status` right after setting it can lag; also `before` is a reserved word.
 
+## Engine never starts Mail by itself (2026-11-19, found while listing what is left to test)
+
+- AppleScript launches any app it addresses, so a tick with Mail closed would have reopened Mail every 5 minutes. Now: Mail closed and nothing due -> tick skipped
+  (`tick-skipped` in the log); something due -> Mail is started hidden in the background (`open -g -j -a Mail`, log `starting-mail`). Not yet tested with Mail closed.
+
 ## Second round of operator tests (Test 07/08, 2026-11-19 15:30)
 
 - Replies to a mail you sent to yourself can go astray in tests: Gmail (Send-as) and Apple Mail both answer the *original recipient* when the mail is "from you".

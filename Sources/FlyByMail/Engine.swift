@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import os
 
@@ -127,6 +128,23 @@ final class Engine {
     func tick(now: Date = Date()) -> TickReport {
         var report = TickReport(started: now)
         let t0 = Date()
+
+        // Talking to Mail through AppleScript starts Mail if it is not running. Never do that behind the user's back:
+        // with Mail closed there is nothing new to see, so skip. Only when a reminder is due do we start Mail, hidden and in the background.
+        func mailIsRunning() -> Bool { NSWorkspace.shared.runningApplications.contains { $0.bundleIdentifier == "com.apple.mail" } }
+        if !mailIsRunning() {
+            guard state.entries.values.contains(where: { $0.status == .pending && $0.due <= now }) else {
+                EngineLog.write("tick-skipped", ["reason": "Mail is not running and nothing is due"])
+                return report
+            }
+            EngineLog.write("starting-mail", ["reason": "a reminder is due and Mail is closed; starting it hidden"])
+            let opener = Process()
+            opener.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+            opener.arguments = ["-g", "-j", "-a", "Mail"]
+            try? opener.run(); opener.waitUntilExit()
+            for _ in 0..<40 where !mailIsRunning() { Thread.sleep(forTimeInterval: 0.5) }
+            Thread.sleep(forTimeInterval: 5)   // let Mail load its accounts before scripting it
+        }
         func fail(_ what: String, _ error: Error) {
             report.errors.append("\(what): \(error)")
             EngineLog.write("error", ["step": what, "error": "\(error)"])
