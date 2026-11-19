@@ -44,6 +44,8 @@ _Last updated: 2026-11-19_
 - Mail delivers mail you send to yourself as read, so `ensure-marks` flags it orange, colours it and sets it unread; the tick polls for the arrival (6 rounds, 10 s apart) and keeps trying on later ticks
   (`marksPending`, up to 12 ticks, log `marks-gave-up`). Entry fields: `markId` (reminder Message-Id), `marksPending`, `marksTries`; older entries (no `markId`) still mark the copy of the original.
   Unmark / dismiss / menu clear / reply detection all act on `markKey` (= reminder id, else original id); replies are still matched against the original id.
+- **Verified live end to end on a real Yahoo mail (Test 10, 22:42:52 due)**: reminder sent 22:43:11 (on time), Yahoo delivered it 22:45:10 (~2 min, much slower than iCloud's seconds),
+  the next tick marked it 22:47:56: `read=false flagged=true color=orange`. To close the 2-3 min gap the app now re-checks 30 s after any tick that leaves a reminder waiting for its marks.
 - Verified live for the script and the marking on Test 09's reminder (arrived 22:36:06, `read=false flagged=true color=orange`). Full engine path (due -> remind -> mark) pending on the next tagged mail.
 
 ## Dismissing a returned mail (2026-11-19, operator request)

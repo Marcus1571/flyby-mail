@@ -76,6 +76,7 @@ final class Engine {
     }
 
     var pendingCount: Int { state.entries.values.filter { $0.status == .pending }.count }
+    var marksPendingCount: Int { state.entries.values.filter { $0.status == .returned && $0.marksPending == true }.count }
     var returnedCount: Int { state.entries.values.filter { $0.status == .returned }.count }
 
     private func save() {

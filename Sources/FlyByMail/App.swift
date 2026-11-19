@@ -15,6 +15,7 @@ final class AppModel: ObservableObject {
     @Published var lastError: String?
     @Published var busy = false
     private var timer: Timer?
+    private var quickRetry: Task<Void, Never>?
 
     init() {
         pending = engine.pendingCount
@@ -51,6 +52,14 @@ final class AppModel: ObservableObject {
         lastCheck = Date()
         lastError = report.errors.first
         busy = false
+        // A reminder that has been sent but has not reached the inbox yet (Yahoo can take minutes): look again in 30 s instead of waiting 5 minutes.
+        quickRetry?.cancel()
+        if engine.marksPendingCount > 0 {
+            quickRetry = Task { [weak self] in
+                try? await Task.sleep(nanoseconds: 30_000_000_000)
+                if !Task.isCancelled { await self?.checkNow() }
+            }
+        }
     }
 }
 
