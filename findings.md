@@ -11,6 +11,14 @@ Append-only log. Newest first.
   `MEComposeSession` (icon = SF Symbol name, tooltip) sits in the same `NSExtensionAttributes`.
 - Lesson: pluginkit registration is not proof that Mail lists the extension; check Mail's Extensions pane.
 
+## 2026-11-19 (engine gotchas)
+
+- `osascript` output is trimmed: a line ending in an empty tab-separated field loses its tab; pad fields when parsing.
+- AppleScript prints big numbers locale-formatted (`1,795089226E+9`): print small integers (ages in seconds) and compute epochs in Swift.
+- Bulk property fetch only works as `message id of (every message of box whose ...)`; through a variable holding the list it fails. Reserved/unusable
+  variable names found: `lines`, `dates`, `ids`, `inBox` (any case of `inbox`), `st`, `copies`.
+- macOS `sed` has no `\b`: use perl for word-boundary renames.
+
 ## 2026-11-19 (marking a returned mail)
 
 - Operator: a returned mail needs a clear "this is your mail reproposed, nobody answered" look. Mail has no labels; by script

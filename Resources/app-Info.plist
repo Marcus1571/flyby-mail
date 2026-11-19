@@ -11,5 +11,7 @@
 	<key>CFBundleVersion</key><string>__BUILD__</string>
 	<key>LSMinimumSystemVersion</key><string>13.0</string>
 	<key>NSHighResolutionCapable</key><true/>
+	<key>LSUIElement</key><true/>
+	<key>NSAppleEventsUsageDescription</key><string>FlyBy needs to control Mail to find your sent mails and bring the unanswered ones back to your Inbox.</string>
 </dict>
 </plist>

@@ -12,6 +12,17 @@ _Last updated: 2026-11-19_
 - **Not yet verified in Mail**: the button appears, the picker works, the header reaches the sent message and the Sent copy.
 - Apple Mail on the operator's Mac has only iCloud and Google accounts; the Yahoo test account still has to be added.
 
+## Engine built 2026-11-19 (menu-bar app, runs every 5 min)
+
+- `Sources/FlyByMail/Engine.swift` + `Resources/engine/*.applescript` (run through `osascript`, no password; needs the one-time macOS "control Mail" permission).
+  Tick: (1) `sent-ids` lists the last 30 days of sent mail (bulk, ~0.4 s), `headers` reads each new one once -> tagged mail becomes a pending entry, and the
+  `In-Reply-To` of every sent mail is remembered (what the user replied to); (2) due + pending: if "only if nobody replies", `replies` looks for a real answer
+  (not me, not automatic) among newer INBOX mail -> `answered`, else `return` copies the sent mail into INBOX with orange flag + orange background + unread;
+  (3) a returned mail the user replied to afterwards gets `unmark` (flag and colour off).
+- State: `~/Library/Application Support/FlyByMail/state.json`. Log (JSON lines, why-it-did-what-it-did): `~/Library/Logs/FlyByMail/engine.log`.
+- Verified live on the Yahoo test account: tagged -> returned (`copied 1`, idempotent). Not yet verified live: answered-by-recipient path, unmark-on-reply path.
+- Menu bar: status, Check now, Open at login, Show log, Welcome, Quit. Host app is `LSUIElement`, entitlement `com.apple.security.automation.apple-events`.
+
 ## Operator feedback 2026-11-19 (requirements)
 
 - The returned mail must be unmistakable: "this is NOT a normal incoming mail, it is your mail brought back because nobody answered". Done so far by script:

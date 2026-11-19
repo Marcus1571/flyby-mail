@@ -28,6 +28,7 @@ done
 lipo -create .build/obj/FlyByMail-arm64 .build/obj/FlyByMail-x86_64 -output "$APP/Contents/MacOS/FlyByMail"
 lipo -create .build/obj/FlyByMailExtension-arm64 .build/obj/FlyByMailExtension-x86_64 -output "$EXT/Contents/MacOS/FlyByMailExtension"
 
+mkdir -p "$APP/Contents/Resources/engine" && cp Resources/engine/*.applescript "$APP/Contents/Resources/engine/" && cp Resources/FlyByTemplate*.png "$APP/Contents/Resources/"
 mkdir -p "$EXT/Contents/Resources" && cp Resources/FlyByTemplate*.png "$EXT/Contents/Resources/"
 sed "s/__VERSION__/$VERSION/;s/__BUILD__/$BUILD/" Resources/app-Info.plist > "$APP/Contents/Info.plist"
 sed "s/__VERSION__/$VERSION/;s/__BUILD__/$BUILD/" Resources/ext-Info.plist > "$EXT/Contents/Info.plist"
@@ -35,9 +36,9 @@ sed "s/__VERSION__/$VERSION/;s/__BUILD__/$BUILD/" Resources/ext-Info.plist > "$E
 # Sign deepest-first: the extension (sandboxed, as every app extension must be), then the app that carries it.
 if [ -n "$IDENTITY" ]; then
   codesign --force --options runtime --timestamp --entitlements Resources/ext.entitlements --sign "$IDENTITY" "$EXT"
-  codesign --force --options runtime --timestamp --sign "$IDENTITY" "$APP"
+  codesign --force --options runtime --timestamp --entitlements Resources/app.entitlements --sign "$IDENTITY" "$APP"
 else
   codesign --force --entitlements Resources/ext.entitlements --sign - "$EXT"
-  codesign --force --sign - "$APP"
+  codesign --force --entitlements Resources/app.entitlements --sign - "$APP"
 fi
 codesign --verify --deep --strict "$APP" && echo "Built $APP (version $VERSION, signed: ${IDENTITY:-ad-hoc})"
