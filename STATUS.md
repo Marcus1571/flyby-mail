@@ -35,6 +35,20 @@ _Last updated: 2026-11-19_
   `return` now marks, waits, reads back and only finishes after the marks held on two checks 3 s apart; result is logged (`copied 1 flagged=true color=orange`). Not yet seen live.
 - AppleScript note: reading `flagged status` right after setting it can lag; also `before` is a reserved word.
 
+## Second round of operator tests (Test 07/08, 2026-11-19 15:30)
+
+- Replies to a mail you sent to yourself can go astray in tests: Gmail (Send-as) and Apple Mail both answer the *original recipient* when the mail is "from you".
+  Use a recipient that is not one of your own addresses, or reply and edit the To.
+- Test 07: the operator's reply (sent from iCloud to Yahoo at 15:34, before the due time) landed in **Yahoo's Bulk (spam)** folder, so no inbox ever saw it, and the engine returned the mail.
+  Spam is deliberately not counted as an answer (nobody would see it). But the reply was the operator's own follow-up in the thread: **new rule (built)**:
+  any reply of yours (from any account in Mail) since you sent the mail means it is handled: it is not returned, or loses its marks if already returned (`state.replyTargets` vs `sentAt`).
+  Verified: Test 07 unmarked, reason "you replied".
+- Test 08 (unanswered) was returned with colour but **no flag**, although `return` had read back `flagged=true`. Likely cause: two returns in one tick; Mail refreshes the inbox after the second copy and the first copy
+  comes back without the flag. Built: `ensure-marks` script; the tick waits 12 s after returning, re-checks the marks of mails returned in this tick and in the last 15 minutes (log `marks-checked`).
+  Test 08 re-flagged by hand. Not yet seen live.
+- Open from before: does Done close the picker (extensionContext attempt), does the app receive the extension's `app.legba.flybymail.pick` message (`ext-pick` in engine.log).
+  Info-level system log lines age out within about an hour: watch live with `/usr/bin/log stream` while testing.
+
 ## Picker v2 + feedback (2026-11-19)
 
 - Picker v2 (SwiftUI): the Gmail presets with their real times, date and time, only-if-nobody-replies switch. Operator test: works, but setting a time "feels fragile"

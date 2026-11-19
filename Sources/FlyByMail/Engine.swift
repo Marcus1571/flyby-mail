@@ -172,9 +172,18 @@ final class Engine {
         }
 
         // 2. due and still pending -> answered, or return
+        var justReturned: [Entry] = []
         for var entry in state.entries.values where entry.status == .pending && entry.due <= now {
             let age = max(1, Int(now.timeIntervalSince(entry.sentAt)))
             var answeredBy: String?
+            // You replied to your own mail since sending it (from any account in Mail): you have dealt with it, nothing to bring back.
+            if let followUp = state.replyTargets[entry.messageId], followUp > entry.sentAt {
+                entry.status = .answered; entry.answeredBy = "you"; report.answered += 1
+                EngineLog.write("answered", ["id": entry.messageId, "by": "you", "followup_at": ISO8601DateFormatter().string(from: followUp),
+                                             "due": ISO8601DateFormatter().string(from: entry.due), "decision": "not returned"])
+                state.entries[entry.messageId] = entry
+                continue
+            }
             if entry.noreply {
                 do { answeredBy = try run("replies", [entry.account, entry.messageId, "\(age)"]).split(separator: "\n").first.map(String.init) }
                 catch { fail("replies", error); continue }   // unknown: try again next tick rather than returning blindly
@@ -186,6 +195,7 @@ final class Engine {
                 do {
                     let result = try run("return", [entry.account, entry.messageId])
                     entry.status = .returned; entry.returnedAt = now; report.returned += 1
+                    justReturned.append(entry)
                     EngineLog.write("returned", ["id": entry.messageId, "noreply": entry.noreply, "result": result,
                                                  "late_by_s": Int(now.timeIntervalSince(entry.due))])
                 } catch { fail("return", error); continue }
@@ -193,12 +203,23 @@ final class Engine {
             state.entries[entry.messageId] = entry
         }
 
+        // 2b. Mail refreshes the inbox after each copy and can drop the flag of the mail returned just before: let it settle, then re-check the marks
+        //     of the mails returned in this tick and of any returned within the last 15 minutes (after that the marks are the user's to keep or clear).
+        let recent = state.entries.values.filter { $0.status == .returned && ($0.returnedAt.map { now.timeIntervalSince($0) < 900 } ?? false) }
+        if !justReturned.isEmpty { Thread.sleep(forTimeInterval: 12) }
+        for (account, entries) in Dictionary(grouping: recent, by: \.account) {
+            do {
+                let out = try run("ensure-marks", [account] + entries.map(\.messageId))
+                EngineLog.write("marks-checked", ["account": account, "result": out.replacingOccurrences(of: "\n", with: " | ")])
+            } catch { fail("ensure-marks", error) }
+        }
+
         // 3. returned mail that has been answered (by you from Mail, or by anyone, landing in any account) -> take the marks off
         let returnedEntries = state.entries.values.filter { $0.status == .returned }
         if !returnedEntries.isEmpty {
             var reasons: [String: String] = [:]
             for e in returnedEntries {
-                if let at = e.returnedAt, let repliedAt = state.replyTargets[e.messageId], repliedAt > at { reasons[e.messageId] = "you replied" }
+                if let repliedAt = state.replyTargets[e.messageId], repliedAt > e.sentAt { reasons[e.messageId] = "you replied" }
             }
             let since = state.lastActivityScan ?? returnedEntries.compactMap(\.returnedAt).min() ?? now
             let age = min(max(Int(now.timeIntervalSince(since)) + 120, 60), 14 * 86400)   // only mail that arrived since the last look
