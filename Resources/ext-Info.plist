@@ -20,7 +20,7 @@
 			</array>
 			<key>MEComposeSession</key>
 			<dict>
-				<key>MEComposeIcon</key><string>airplane.departure</string>
+				<key>MEComposeIcon</key><string>FlyByTemplate</string>
 				<key>MEComposeIconToolTip</key><string>FlyBy: bring this mail back if nobody replies</string>
 			</dict>
 		</dict>
