@@ -20,6 +20,9 @@ final class AppModel: ObservableObject {
         pending = engine.pendingCount
         returned = engine.returnedCount
         EngineLog.write("app-start", ["pending": pending, "returned": returned])
+        DistributedNotificationCenter.default().addObserver(forName: Notification.Name("app.legba.flybymail.pick"), object: nil, queue: .main) { note in
+            EngineLog.write("ext-pick", ["info": note.userInfo.map { "\($0)" } ?? "(no userInfo)"])
+        }
         Task { await checkNow() }
         timer = Timer.scheduledTimer(withTimeInterval: 300, repeats: true) { [weak self] _ in
             Task { @MainActor in await self?.checkNow() }

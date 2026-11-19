@@ -11,6 +11,20 @@ Append-only log. Newest first.
   `MEComposeSession` (icon = SF Symbol name, tooltip) sits in the same `NSExtensionAttributes`.
 - Lesson: pluginkit registration is not proof that Mail lists the extension; check Mail's Extensions pane.
 
+## 2026-11-19 (research: can the compose toolbar icon change, and can Done close the picker?)
+
+- Compose icon/tooltip come from `Info.plist` (`MEComposeSession` ▸ `MEComposeIcon`, `MEComposeIconToolTip`). WWDC21 "Build Mail app extensions", its notes, the Medium
+  article and the MailKit headers show no API to change icon, badge or state at runtime (Thunderbird's `composeAction` can; MailKit cannot). The only Apple
+  Developer Forums thread on toolbar icons (699500, main-viewer toolbar) has 0 replies. No open-source MailKit extension found with a dynamic icon; `triage`
+  (follow-up from compose) uses `osascript`, a CGEvent tap and macOS notifications, and shows nothing in the compose window.
+- Per-recipient annotation works (`MEAddressAnnotation.success`, `session.reload()`): the token gets a black check mark; our text shows at the top of the token's menu.
+- Known MailKit bugs (macOS 12.4 era, may be fixed): `allowMessageSendForSession` never called (FB10533807), `rawData` nil (FB10533893).
+- **The picker runs out of process**: responder chain `PickerViewController > NSView > MEExtensionServiceViewController > NSWindow`, window delegate nil. Closing Mail's
+  popover from inside failed with every method tried (presentingViewController.dismiss, dismiss, Escape key event, cancelOperation; `performClose` on the window beeps).
+  Still to try: `extensionContext.completeRequest`. Fallback: no closing button; green "Reminder set" panel, click outside to close.
+- Ideas for visible feedback outside the toolbar (all need the extension to tell the menu-bar app what was picked, being tested via a distributed notification `app.legba.flybymail.pick`):
+  a floating status pill attached to the compose window, a menu-bar title, a macOS notification after send.
+
 ## 2026-11-19 (engine gotchas)
 
 - `osascript` output is trimmed: a line ending in an empty tab-separated field loses its tab; pad fields when parsing.

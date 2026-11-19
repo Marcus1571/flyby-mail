@@ -20,7 +20,18 @@ final class ComposeHandler: NSObject, MEComposeSessionHandler {
         log.info("compose begin session=\(session.sessionID.uuidString, privacy: .public)")
     }
 
+    /// Tells the menu-bar app what the user picked in this compose window (nothing picked = due 0). Test of the extension->app channel.
+    func announce(_ sessionID: UUID, _ pick: Pick?) {
+        let due = pick?.due()?.timeIntervalSince1970 ?? 0
+        DistributedNotificationCenter.default().postNotificationName(
+            Notification.Name("app.legba.flybymail.pick"), object: nil,
+            userInfo: ["session": sessionID.uuidString, "due": due, "noreply": pick?.onlyIfNoReply ?? true],
+            deliverImmediately: true)
+        log.info("announced due=\(due) session=\(sessionID.uuidString, privacy: .public)")
+    }
+
     func mailComposeSessionDidEnd(_ session: MEComposeSession) {
+        announce(session.sessionID, nil)
         log.info("compose end session=\(session.sessionID.uuidString, privacy: .public) hadPick=\(self.picks[session.sessionID] != nil)")
         picks[session.sessionID] = nil
     }
@@ -264,6 +275,7 @@ final class PickerViewController: MEExtensionViewController {
         let session = self.session
         model.onChange = { [weak handler] pick in
             handler?.picks[sessionID] = pick
+            handler?.announce(sessionID, pick)
             log.info("picked choice=\(String(describing: pick.choice), privacy: .public) noreply=\(pick.onlyIfNoReply) session=\(sessionID.uuidString, privacy: .public)")
             if pick.choice != .none { NSHapticFeedbackManager.defaultPerformer.perform(.levelChange, performanceTime: .now) }
             session.reload()   // asks Mail to redraw the recipient annotation
@@ -289,6 +301,10 @@ final class PickerViewController: MEExtensionViewController {
             log.info("close: \(how, privacy: .public) -> closed=\(closed)")
             return closed
         }
+        // 0. the extension's own handle on its host (how Share extensions close themselves)
+        log.info("close: extensionContext=\(self.extensionContext != nil)")
+        self.extensionContext?.completeRequest(returningItems: [], completionHandler: nil)
+        if gone("extensionContext.completeRequest") { return }
         // 1. an NSPopover somewhere in the responder chain or as the window delegate
         var r: NSResponder? = self
         while let current = r {
