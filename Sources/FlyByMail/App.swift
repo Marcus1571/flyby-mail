@@ -1,6 +1,9 @@
 import AppKit
 import ServiceManagement
 import SwiftUI
+#if SPARKLE
+import Sparkle
+#endif
 
 // Host app = the engine's home: a menu-bar app that checks Mail every 5 minutes (and carries the Mail extension).
 
@@ -71,6 +74,10 @@ final class AppModel: ObservableObject {
 @main
 struct FlyByMailApp: App {
     @StateObject private var model = AppModel()
+    #if SPARKLE
+    // Only the packaged build carries Sparkle; it checks the appcast daily (Info.plist) and installs updates itself.
+    private let updater = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil)
+    #endif
 
     private static let icon: NSImage = {
         let image = NSImage(named: "FlyByTemplate") ?? NSImage(systemSymbolName: "airplane.departure", accessibilityDescription: "FlyBy")!
@@ -80,17 +87,24 @@ struct FlyByMailApp: App {
 
     var body: some Scene {
         MenuBarExtra {
-            MenuView(model: model)
+            #if SPARKLE
+            MenuView(model: model, checkForUpdates: { updater.checkForUpdates(nil) })
+            #else
+            MenuView(model: model, checkForUpdates: nil)
+            #endif
         } label: {
             Image(nsImage: Self.icon)
         }
         Window("FlyBy for Mail", id: "welcome") { WelcomeView() }
+            .windowResizability(.contentSize)
+        Window("About FlyBy", id: "about") { AboutView() }
             .windowResizability(.contentSize)
     }
 }
 
 struct MenuView: View {
     @ObservedObject var model: AppModel
+    let checkForUpdates: (() -> Void)?
     @Environment(\.openWindow) private var openWindow
     @State private var atLogin = SMAppService.mainApp.status == .enabled
 
@@ -112,9 +126,32 @@ struct MenuView: View {
                 catch { EngineLog.write("login-item-failed", ["error": "\(error)"]); atLogin = SMAppService.mainApp.status == .enabled }
             }
         Button("Show log") { NSWorkspace.shared.open(EngineLog.file) }
+        if let checkForUpdates { Button("Check for Updates…", action: checkForUpdates) }
+        Button("About FlyBy…") { NSApp.activate(ignoringOtherApps: true); openWindow(id: "about") }
         Button("Welcome…") { NSApp.activate(ignoringOtherApps: true); openWindow(id: "welcome") }
         Divider()
         Button("Quit FlyBy") { NSApp.terminate(nil) }.keyboardShortcut("q")
+    }
+}
+
+struct AboutView: View {
+    private var version: String {
+        let info = Bundle.main.infoDictionary
+        return "Version \(info?["CFBundleShortVersionString"] as? String ?? "?") (build \(info?["CFBundleVersion"] as? String ?? "?"))"
+    }
+
+    var body: some View {
+        VStack(spacing: 8) {
+            Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 96, height: 96)
+            Text("FlyBy for Mail").font(.title.bold())
+            Text(version).foregroundStyle(.secondary)
+            Divider().padding(.vertical, 4)
+            Text("Bring a mail back to your Inbox when nobody has answered.").multilineTextAlignment(.center)
+            Text("© 2026 Marcus1571 · MIT").font(.callout).foregroundStyle(.secondary)
+            Link("github.com/Marcus1571/flyby-mail", destination: URL(string: "https://github.com/Marcus1571/flyby-mail")!).font(.callout)
+        }
+        .padding(28)
+        .frame(width: 340)
     }
 }
 

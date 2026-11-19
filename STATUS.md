@@ -1,6 +1,6 @@
 # STATUS — FlyBy for Mail
 
-_Last updated: 2026-11-19_
+_Last updated: 2026-11-20_
 
 ## Where things stand
 
@@ -115,7 +115,14 @@ _Last updated: 2026-11-19_
 1. **PASSED 2026-11-19**: extension loads, button + picker work, header `X-Flyby: v=1; due=<epoch>; noreply=1` is on the Yahoo Sent copy. Icon still to confirm visually.
 2. Mail scripting: **partly passed 2026-11-19**: scan of tagged Sent mail + reply check + copy of the sent mail into the Yahoo INBOX as unread work (`scripts/spike-*.applescript`). Still to do: move a received message to a FlyBy folder and back; confirm the copy reaches Yahoo's server/iPhone; a real engine loop (nothing runs on its own yet).
 
-## Notarization
+## Distribution (2026-11-20, v0.1.0)
 
-Not done yet; the spike only needs a local Developer ID signature. Notarize with the shared `notarytool` profile of the other apps
-before giving the DMG to anybody.
+- **Built and verified**: `scripts/make-dmg.sh` builds `build/dist/FlyByMail-0.1.0.dmg` (Developer ID, hardened runtime, Sparkle 2.10.1 embedded,
+  app icon and About window), notarized by Apple with the shared `diskledplus-notary` profile and stapled; `spctl` says "Notarized Developer ID"
+  for both the DMG and the app. The app's Sparkle keys: shared EdDSA public key, daily check, feed
+  `https://raw.githubusercontent.com/$FEED_REPO/main/appcast.xml`.
+- **Open decision (asked of the operator)**: Sparkle needs a public feed and DMG URL, but this repo is private. Either make it public
+  or add a small public releases-only repo (my recommendation, `flyby-mail-releases`); then rebuild with `FEED_REPO=<repo>`, run
+  `scripts/make-appcast.sh 0.1.0`, publish. No appcast is published yet, so nothing updates itself yet.
+- **Not yet tested**: clean install from the DMG (first launch, Mail extension enabling, Automation prompt), a Sparkle update from one
+  version to the next (does Mail keep the extension enabled?), the Mac-asleep case.
