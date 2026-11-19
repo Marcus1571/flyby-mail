@@ -48,6 +48,15 @@ _Last updated: 2026-11-19_
   the next tick marked it 22:47:56: `read=false flagged=true color=orange`. To close the 2-3 min gap the app now re-checks 30 s after any tick that leaves a reminder waiting for its marks.
 - Verified live for the script and the marking on Test 09's reminder (arrived 22:36:06, `read=false flagged=true color=orange`). Full engine path (due -> remind -> mark) pending on the next tagged mail.
 
+## Replies judged as junk (2026-11-19, found with Test 07 and Test 10)
+
+- Short replies (e.g. "YELLOOOO") from another of the operator's addresses to the Yahoo address were judged junk: Test 07's reply sat in Yahoo's server-side **Bulk** folder (server filter), and Mail's own
+  filter also marked both replies junk (`junk mail status = true`, shown in brown even in the Inbox; no visible "Not Junk" button in the message view once they are in the Inbox).
+- `set junk mail status of <msg> to false` works and counts as training: `defaults read com.apple.mail NumberOfMessagesMarkedAsNotJunk` went 2 -> 4.
+- Mail's own help: Settings > Junk Mail > exceptions (Contacts, Previous Recipients, VIPs). Yahoo's filter is separate: "Not spam" in Yahoo Mail on the web.
+- Idea awaiting the operator's decision: **rescue replies from Junk** (a Junk/Bulk message whose In-Reply-To is the id of a tagged sent mail = a real answer: count it as answered, mark Not Junk, move to the Inbox, log it).
+- Note: the engine's reply check only looks at inboxes, so an answer that sits in Junk does not cancel a reminder; and the "you replied" rule (your own reply from any account) is what unmarked Test 10's reminder at 23:28.
+
 ## Dismissing a returned mail (2026-11-19, operator request)
 
 - Mail's main toolbar cannot get an extension icon (no toolbar API in MailKit; the headers mention none; the only forum thread has no reply). The existing **flag button is the dismiss**:
