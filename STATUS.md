@@ -31,6 +31,10 @@ _Last updated: 2026-11-19_
   every change, and an experiment: while a reminder is set the recipient tokens in the compose window get a green MailKit "success" annotation ("FlyBy: comes back ...")
   so the reminder stays visible after the picker closes (`session.reload()` redraws it). Unknown until seen: whether Mail shows the annotation text, and whether
   `dismiss` / `performClose` really closes the popover.
+- Operator test 14:43: picker confirmed lovable. Bugs: (1) the leftover "Test: in 2 minutes" link under the panel looked like the setting: removed;
+  (2) Done beeped and did not close: `performClose` on Mail's popover window beeps. Replaced by `closePicker()`, which tries responder-chain NSPopover, delegate,
+  presenting VC dismiss, `dismiss`, an Escape key event, `cancelOperation` in turn and logs `close: ... -> closed=<bool>`; result pending.
+- In the compose window the recipient token showed a black check mark while a reminder was set (the MailKit success annotation); the tooltip text is unconfirmed.
 - Not in the picker yet (engine cannot act on them): follow-up text, private note.
 
 ## Operator feedback 2026-11-19 (requirements)
