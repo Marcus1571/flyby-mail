@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.1
+
+- `Sources/FlyByMailExtension/Extension.swift` (behaviour): the picker's "Done" button is gone. Mail owns the popover and has no API to close it
+  from inside, so the button never closed it and its close attempts beeped. The green confirmation now says "All set. Click anywhere outside
+  to close." The `closePicker` code was removed.
+- `README.md`: install, behaviour, backend plan, build.
+
 ## 0.1.0
 
 First distributable build: notarized DMG, Sparkle updates, app icon, About window. Behaviour is the tested engine plus extension
