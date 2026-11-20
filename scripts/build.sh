@@ -36,7 +36,7 @@ done
 lipo -create .build/obj/FlyByMail-arm64 .build/obj/FlyByMail-x86_64 -output "$APP/Contents/MacOS/FlyByMail"
 lipo -create .build/obj/FlyByMailExtension-arm64 .build/obj/FlyByMailExtension-x86_64 -output "$EXT/Contents/MacOS/FlyByMailExtension"
 
-mkdir -p "$APP/Contents/Resources/engine" && cp Resources/engine/*.applescript "$APP/Contents/Resources/engine/" && cp Resources/FlyByTemplate*.png "$APP/Contents/Resources/"
+mkdir -p "$APP/Contents/Resources/engine" && cp Resources/engine/*.applescript "$APP/Contents/Resources/engine/" && cp Resources/FlyByTemplate*.png Resources/paypal-qr.png "$APP/Contents/Resources/"
 mkdir -p "$EXT/Contents/Resources" && cp Resources/FlyByTemplate*.png "$EXT/Contents/Resources/"
 cp .build/AppIcon.icns "$APP/Contents/Resources/"
 sed "s/__VERSION__/$VERSION/;s/__BUILD__/$BUILD/" Resources/app-Info.plist > "$APP/Contents/Info.plist"

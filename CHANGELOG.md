@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.2
+
+- `Sources/FlyByMail/About.swift` (new, behaviour): the About page now matches UsageBar and NeverSleep: icon, version and build, a PayPal support card
+  (QR, three tier buttons, link), a Report a Bug card (issues page), a License and code card, one-line tagline. It was a plain text stub.
+- `Sources/FlyByMail/App.swift`: `AboutView` moved out; hidden `--snapshot-about <dir>` writes light and dark PNGs of the page (used to check the look).
+- `Resources/paypal-qr.png` (new, same asset as UsageBar) and `scripts/build.sh` (copies it into the app).
+
 ## 0.1.1
 
 - `Sources/FlyByMailExtension/Extension.swift` (behaviour): the picker's "Done" button is gone. Mail owns the popover and has no API to close it

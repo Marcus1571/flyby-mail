@@ -85,6 +85,28 @@ struct FlyByMailApp: App {
         return image
     }()
 
+    init() {
+        // Self-check for the About page's look: `FlyByMail --snapshot-about <dir>` writes about-light.png and about-dark.png and exits.
+        if let i = CommandLine.arguments.firstIndex(of: "--snapshot-about"), CommandLine.arguments.count > i + 1 {
+            let dir = CommandLine.arguments[i + 1]
+            _ = NSApplication.shared
+            for (name, appearance) in [("light", NSAppearance.Name.aqua), ("dark", NSAppearance.Name.darkAqua)] {
+                // A real hosting view in an offscreen window: ImageRenderer cannot draw SwiftUI Links.
+                let host = NSHostingView(rootView: AboutView())
+                host.frame = NSRect(origin: .zero, size: host.fittingSize)
+                let window = NSWindow(contentRect: host.frame, styleMask: [.titled], backing: .buffered, defer: false)
+                window.appearance = NSAppearance(named: appearance)
+                window.contentView = host
+                host.layoutSubtreeIfNeeded()
+                if let rep = host.bitmapImageRepForCachingDisplay(in: host.bounds) {
+                    host.cacheDisplay(in: host.bounds, to: rep)
+                    try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: "\(dir)/about-\(name).png"))
+                }
+            }
+            exit(0)
+        }
+    }
+
     var body: some Scene {
         MenuBarExtra {
             #if SPARKLE
@@ -131,27 +153,6 @@ struct MenuView: View {
         Button("Welcome…") { NSApp.activate(ignoringOtherApps: true); openWindow(id: "welcome") }
         Divider()
         Button("Quit FlyBy") { NSApp.terminate(nil) }.keyboardShortcut("q")
-    }
-}
-
-struct AboutView: View {
-    private var version: String {
-        let info = Bundle.main.infoDictionary
-        return "Version \(info?["CFBundleShortVersionString"] as? String ?? "?") (build \(info?["CFBundleVersion"] as? String ?? "?"))"
-    }
-
-    var body: some View {
-        VStack(spacing: 8) {
-            Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 96, height: 96)
-            Text("FlyBy for Mail").font(.title.bold())
-            Text(version).foregroundStyle(.secondary)
-            Divider().padding(.vertical, 4)
-            Text("Bring a mail back to your Inbox when nobody has answered.").multilineTextAlignment(.center)
-            Text("© 2026 Marcus1571 · MIT").font(.callout).foregroundStyle(.secondary)
-            Link("github.com/Marcus1571/flyby-mail", destination: URL(string: "https://github.com/Marcus1571/flyby-mail")!).font(.callout)
-        }
-        .padding(28)
-        .frame(width: 340)
     }
 }
 
