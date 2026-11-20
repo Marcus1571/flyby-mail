@@ -150,7 +150,6 @@ final class PickerModel: ObservableObject {
 
 struct PickerView: View {
     @ObservedObject var model: PickerModel
-    var done: () -> Void = {}
     private let columns = [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)]
 
     var body: some View {
@@ -186,7 +185,7 @@ struct PickerView: View {
             }
             .toggleStyle(.switch)
 
-            ConfirmationPanel(model: model, done: done)
+            ConfirmationPanel(model: model)
         }
         .padding(16)
         .frame(width: 340)
@@ -194,11 +193,9 @@ struct PickerView: View {
 }
 
 /// The user must always know where they stand: grey and quiet until a time is set, then a green framed confirmation
-/// and a Done button that closes the picker.
+/// and a hint that a click outside closes it (Mail owns the popover; no API closes it from inside).
 struct ConfirmationPanel: View {
     @ObservedObject var model: PickerModel
-    let done: () -> Void
-
     var body: some View {
         VStack(spacing: 10) {
             HStack(alignment: .center, spacing: 10) {
@@ -217,14 +214,9 @@ struct ConfirmationPanel: View {
             .overlay(RoundedRectangle(cornerRadius: 10).stroke(model.isSet ? Color.green : Color.secondary.opacity(0.3), lineWidth: model.isSet ? 1.5 : 1))
             .accessibilityElement(children: .combine)
 
-            Button(action: done) {
-                Text(model.isSet ? "Done" : "Choose a time").font(.headline).frame(maxWidth: .infinity, minHeight: 24)
+            if model.isSet {
+                Text("All set. Click anywhere outside to close.").font(.caption).foregroundStyle(.secondary)
             }
-            .buttonStyle(.borderedProminent)
-            .tint(model.isSet ? .green : .gray)
-            .controlSize(.large)
-            .disabled(!model.isSet)
-            .keyboardShortcut(.defaultAction)
         }
         .animation(.easeInOut(duration: 0.2), value: model.isSet)
     }
@@ -280,48 +272,8 @@ final class PickerViewController: MEExtensionViewController {
             if pick.choice != .none { NSHapticFeedbackManager.defaultPerformer.perform(.levelChange, performanceTime: .now) }
             session.reload()   // asks Mail to redraw the recipient annotation
         }
-        let host = NSHostingView(rootView: PickerView(model: model, done: { [weak self] in
-            log.info("done pressed session=\(sessionID.uuidString, privacy: .public)")
-            self?.closePicker()
-        }))
+        let host = NSHostingView(rootView: PickerView(model: model))
         view = host
         preferredContentSize = host.fittingSize
-    }
-
-    /// Mail owns the popover and Apple documents no way to close it from inside, so try the plausible ways in turn and log which one worked.
-    private func closePicker() {
-        guard let window = view.window else { log.info("close: no window"); return }
-        var chain: [String] = []
-        var responder: NSResponder? = self
-        while let r = responder { chain.append(String(describing: type(of: r))); responder = r.nextResponder }
-        log.info("close: window=\(String(describing: type(of: window)), privacy: .public) delegate=\(String(describing: window.delegate.map { type(of: $0) }), privacy: .public) chain=\(chain.joined(separator: ">"), privacy: .public)")
-
-        func gone(_ how: String) -> Bool {
-            let closed = !window.isVisible || view.window == nil
-            log.info("close: \(how, privacy: .public) -> closed=\(closed)")
-            return closed
-        }
-        // 0. the extension's own handle on its host (how Share extensions close themselves)
-        log.info("close: extensionContext=\(self.extensionContext != nil)")
-        self.extensionContext?.completeRequest(returningItems: [], completionHandler: nil)
-        if gone("extensionContext.completeRequest") { return }
-        // 1. an NSPopover somewhere in the responder chain or as the window delegate
-        var r: NSResponder? = self
-        while let current = r {
-            if let popover = current as? NSPopover { popover.performClose(nil); if gone("responder popover") { return } }
-            r = current.nextResponder
-        }
-        if let popover = window.delegate as? NSPopover { popover.performClose(nil); if gone("delegate popover") { return } }
-        // 2. view-controller dismissal
-        presentingViewController?.dismiss(self); if gone("presentingViewController.dismiss") { return }
-        dismiss(nil); if gone("dismiss") { return }
-        // 3. what Escape does for a popover
-        if let esc = NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
-                                      windowNumber: window.windowNumber, context: nil, characters: "\u{1b}", charactersIgnoringModifiers: "\u{1b}",
-                                      isARepeat: false, keyCode: 53) {
-            window.sendEvent(esc); if gone("escape key") { return }
-        }
-        window.cancelOperation(nil); if gone("cancelOperation") { return }
-        log.info("close: nothing worked")
     }
 }
