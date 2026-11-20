@@ -123,5 +123,8 @@ _Last updated: 2026-11-20_
   `https://raw.githubusercontent.com/$FEED_REPO/main/appcast.xml`.
 - **Published 2026-11-20**: repo is public; v0.1.1 (notarized DMG, picker without the Done button) was the first release in the Sparkle feed,
   v0.1.2 (About page like the sibling apps) is the current one (`appcast.xml` on `main` lists only the newest). v0.1.0 is on the Releases page, not in the feed. Optional-backend design: AGENTS.md.
-- **Not yet tested**: clean install from the DMG (first launch, Mail extension enabling, Automation prompt), a Sparkle update from one
-  version to the next (does Mail keep the extension enabled?), the Mac-asleep case.
+- **Verified 2026-11-20**: Sparkle update 0.1.1 -> 0.1.2 on the operator's Mac (installed app reports 0.1.2, the engine restarted and ticked, macOS lists
+  the 0.1.2 extension). Gotcha: an app marked quarantined by hand (not by Finder) runs translocated and Sparkle refuses to update it; remove the
+  attribute (`xattr -dr com.apple.quarantine`). Test installs should copy via Finder.
+- **Not yet tested**: clean install on a second Mac via Finder drag (first launch, Mail extension enabling, Automation prompt), whether Mail keeps
+  the extension ticked after an update, the Mac-asleep case.
