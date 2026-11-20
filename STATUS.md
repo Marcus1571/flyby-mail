@@ -121,7 +121,7 @@ _Last updated: 2026-11-20_
   app icon and About window), notarized by Apple with the shared `diskledplus-notary` profile and stapled; `spctl` says "Notarized Developer ID"
   for both the DMG and the app. The app's Sparkle keys: shared EdDSA public key, daily check, feed
   `https://raw.githubusercontent.com/$FEED_REPO/main/appcast.xml`.
-- **Published 2026-11-20**: repo is public; v0.1.1 (notarized DMG, picker without the Done button) is the first release in the Sparkle feed
-  (`appcast.xml` on `main`). v0.1.0 stays on the Releases page but is not in the feed. Optional-backend design: AGENTS.md.
+- **Published 2026-11-20**: repo is public; v0.1.1 (notarized DMG, picker without the Done button) was the first release in the Sparkle feed,
+  v0.1.2 (About page like the sibling apps) is the current one (`appcast.xml` on `main` lists only the newest). v0.1.0 is on the Releases page, not in the feed. Optional-backend design: AGENTS.md.
 - **Not yet tested**: clean install from the DMG (first launch, Mail extension enabling, Automation prompt), a Sparkle update from one
   version to the next (does Mail keep the extension enabled?), the Mac-asleep case.

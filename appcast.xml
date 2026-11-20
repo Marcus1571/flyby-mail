@@ -6,14 +6,14 @@
     <description>Most recent FlyByMail releases.</description>
     <language>en</language>
     <item>
-      <title>Version 0.1.1</title>
-      <pubDate>Fri, 20 Nov 2026 10:27:09 GMT</pubDate>
-      <sparkle:releaseNotesLink>https://github.com/Marcus1571/flyby-mail/releases/tag/v0.1.1</sparkle:releaseNotesLink>
-      <enclosure url="https://github.com/Marcus1571/flyby-mail/releases/download/v0.1.1/FlyByMail-0.1.1.dmg"
-                 sparkle:version="101"
-                 sparkle:shortVersionString="0.1.1"
-                 sparkle:edSignature="fCyMpiFD0a8o7RcCs94lMBIXmCPO8TNpUca/2lU3hvZdOOXCR0kb6qkt7GrXRfreSxDcm/cRc9L3bOBFyJ/SAQ=="
-                 length="1914582"
+      <title>Version 0.1.2</title>
+      <pubDate>Fri, 20 Nov 2026 10:35:55 GMT</pubDate>
+      <sparkle:releaseNotesLink>https://github.com/Marcus1571/flyby-mail/releases/tag/v0.1.2</sparkle:releaseNotesLink>
+      <enclosure url="https://github.com/Marcus1571/flyby-mail/releases/download/v0.1.2/FlyByMail-0.1.2.dmg"
+                 sparkle:version="102"
+                 sparkle:shortVersionString="0.1.2"
+                 sparkle:edSignature="vZHh7mDj+BxOdIBeWwBm1j7pL+U4DIzSP18GpYzGYpUK1D9a7IUS1eQSpWCNDgX1vAh+gCjxLnSuT/BpPsu+CQ=="
+                 length="1717955"
                  type="application/octet-stream" />
       <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
     </item>
