@@ -1,0 +1,21 @@
+<?xml version="1.0" standalone="yes"?>
+<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <channel>
+    <title>FlyByMail</title>
+    <link>https://raw.githubusercontent.com/Marcus1571/flyby-mail/main/appcast.xml</link>
+    <description>Most recent FlyByMail releases.</description>
+    <language>en</language>
+    <item>
+      <title>Version 0.1.1</title>
+      <pubDate>Fri, 20 Nov 2026 10:27:09 GMT</pubDate>
+      <sparkle:releaseNotesLink>https://github.com/Marcus1571/flyby-mail/releases/tag/v0.1.1</sparkle:releaseNotesLink>
+      <enclosure url="https://github.com/Marcus1571/flyby-mail/releases/download/v0.1.1/FlyByMail-0.1.1.dmg"
+                 sparkle:version="101"
+                 sparkle:shortVersionString="0.1.1"
+                 sparkle:edSignature="fCyMpiFD0a8o7RcCs94lMBIXmCPO8TNpUca/2lU3hvZdOOXCR0kb6qkt7GrXRfreSxDcm/cRc9L3bOBFyJ/SAQ=="
+                 length="1914582"
+                 type="application/octet-stream" />
+      <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+    </item>
+  </channel>
+</rss>
