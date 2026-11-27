@@ -2,6 +2,14 @@
 
 Append-only log. Newest first.
 
+## 2026-11-27 — reminder copies in Sent; moving mail from AppleScript loops
+
+- The operator saw every reminder in the Yahoo Sent folder. Expected from the design: a reminder is a mail to yourself, Mail keeps its Sent copy, and the engine used that copy as its
+  duplicate guard. Fix (0.3.2): move the copy to Trash after reading its id, look in Sent and Trash for duplicates. Not on Gmail: one message carries the Inbox and Sent labels there.
+- Tested live: one Yahoo reminder moved Sent -> Trash, its inbox copy untouched (`sent=0 trash=1 inbox=1`).
+- Two AppleScript traps while moving 27 at once: (1) `repeat with m in (every message … whose …)` re-runs the query on every step, so after a few moves "Invalid index" (-1719);
+  first `set hits to (every message …)`, then loop. (2) `m` is a reference to a list item; passing it to `move` inside a `try` failed silently. Use `contents of m`.
+
 ## 2026-11-26 (research: can the extension show a FlyBy band above a message?)
 
 - Asked because a reply like "Ok" ends the wait silently and Mail shows no FlyBy state on the message. Mail has no DOM to inject into

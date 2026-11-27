@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.3.2
+
+**Fix: reminder mails no longer pile up in Sent.** Found by the operator on 2026-11-27: every "FlyBy: nobody replied to …" reminder appeared in the Yahoo Sent folder next to the
+mails really sent. A reminder is a mail from the account to itself, so Mail kept a Sent copy like for any other mail; the engine also used that copy to avoid sending a reminder twice.
+
+- `Resources/engine/common.applescript` (behaviour): new `trashMailboxOf(acct)`, the account's Trash ("Trash", "Deleted Messages", "Deleted Items", "Bin", "Cestino", "Posta eliminata"). Gmail
+  accounts (server name contains gmail/googlemail) answer none: Gmail's Sent and Inbox copies of a mail to yourself are one message, so trashing it would also take the reminder out of the inbox.
+- `Resources/engine/remind.applescript` (behaviour): after sending, the reminder's id is read from its Sent copy as before, then the copy is moved to Trash (`toTrash`). The "already sent"
+  check looks in Sent and Trash, so the duplicate guard from 0.2.2 still works while Trash keeps the copy (a reminder found there is reused). A reminder reused from Sent is moved too.
+  The messages are dereferenced (`contents of`) before moving: a loop variable is only a pointer into the list and `move` failed silently on it (seen while cleaning up, see findings).
+- Cleanup done by hand the same day on the operator's Mac: the 28 older reminder copies in Sent (27 Yahoo, 1 iCloud) moved to Trash; the inbox copies stay.
+
 ## 0.3.1
 
 **Fix: a sent reminder's claim no longer expires.** Found in the first live test on 2026-11-23: the Mac that lost the claim kept the mail pending, the claim freed itself after 10 minutes,

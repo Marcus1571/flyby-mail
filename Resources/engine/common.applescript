@@ -30,3 +30,20 @@ on sentMailboxOf(acct)
 	end tell
 	return missing value
 end sentMailboxOf
+
+-- The account's Trash, or missing value. Gmail answers missing value on purpose: there the Sent copy of a mail to yourself is the
+-- SAME message as the inbox copy (labels, not folders), so trashing it would take the reminder out of the inbox too.
+on trashMailboxOf(acct)
+	tell application "Mail"
+		try
+			set host to server name of acct
+			if host contains "gmail" or host contains "googlemail" then return missing value
+		end try
+		repeat with candidate in {"Trash", "Deleted Messages", "Deleted Items", "Bin", "Cestino", "Posta eliminata"}
+			try
+				return mailbox (contents of candidate) of acct
+			end try
+		end repeat
+	end tell
+	return missing value
+end trashMailboxOf
