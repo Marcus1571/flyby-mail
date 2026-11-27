@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleName</key><string>FlyByMail</string>
+	<key>CFBundleDisplayName</key><string>FlyBy for Mail</string>
+	<key>CFBundleExecutable</key><string>FlyByMail</string>
+	<key>CFBundleIdentifier</key><string>app.legba.flybymail</string>
+	<key>CFBundlePackageType</key><string>APPL</string>
+	<key>CFBundleShortVersionString</key><string>__VERSION__</string>
+	<key>CFBundleVersion</key><string>__BUILD__</string>
+	<key>LSMinimumSystemVersion</key><string>13.0</string>
+	<key>NSHighResolutionCapable</key><true/>
+	<key>CFBundleIconFile</key><string>AppIcon</string>
+	<key>NSHumanReadableCopyright</key><string>© 2026 Marcus1571. MIT license.</string>
+	<key>LSUIElement</key><true/>
+	<key>NSAppleEventsUsageDescription</key><string>FlyBy needs to control Mail to find your sent mails and bring the unanswered ones back to your Inbox.</string>
+</dict>
+</plist>

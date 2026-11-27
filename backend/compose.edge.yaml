@@ -1,0 +1,9 @@
+# Optional override: join the shared "edge" network so a cloudflared container on it can reach this service at http://flybymail-claims:8787
+# (create the network once with: docker network create edge). Use: docker compose -f compose.yaml -f compose.edge.yaml up -d --build
+services:
+  claims:
+    networks: [default, edge]
+networks:
+  edge:
+    name: edge
+    external: true

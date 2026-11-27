@@ -1,0 +1,15 @@
+# FlyByMail claim service. Run: cp .env.example .env (fill FLYBY_KEYS, chmod 600), then docker compose up -d --build
+services:
+  claims:
+    build: .
+    container_name: flybymail-claims
+    restart: unless-stopped
+    ports: ["127.0.0.1:8787:8787"]   # never publish publicly: reach it through a tunnel / tailnet door
+    environment:
+      - FLYBY_KEYS=${FLYBY_KEYS}
+      - FLYBY_DB=/data/claims.db
+    volumes: ["./data:/data"]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs: ["/tmp"]
